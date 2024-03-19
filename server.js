@@ -47,6 +47,12 @@ io.on('connection', (socket) => {
         userName
     })
 
+    // a new client has joined. If there are any offers available,
+    // emit them out
+    if (offers.length) {
+        socket.emit('availableOffers', offers);
+    }
+
     socket.on('newOffer', (newOffer) => {
         offers.push({
             offererUserName: userName,
@@ -56,7 +62,21 @@ io.on('connection', (socket) => {
             answer: null,
             answererIceCandidates: [],
         });
+        console.log(newOffer.sdp.slice(50))
         // send out to all connected sockets except the caller
         socket.broadcast.emit('newOfferAwaiting', offers.slice(-1));
+    })
+
+    socket.on('sendIceCandidateToSignalingServer', iceCandidateObj => {
+        const { didIOffer, iceUserName, iceCandidate } = iceCandidateObj;
+        if (didIOffer) {
+            const offerInOffers = offers.find(o => o.offererUserName === iceUserName);
+            if (offerInOffers) {
+                offerInOffers.offerIceCandidates.push(iceCandidate);
+                // come back to this....
+                // if the answerer is already here, emit the iceCandidates to that user
+            }
+        }
+        console.log(offers)
     })
 })

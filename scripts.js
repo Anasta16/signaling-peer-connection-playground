@@ -59,7 +59,13 @@ const answerOffer = async (offerObj) => {
     // add the answer to the offerObj so the server knows which offer this is related to
     offerObj.answer = answer;
     // emit the answer to the signaling server so it can emit to CLIENT1
-    socket.emit('newAnswer', offerObj);
+    // expect a response from the server with the already existing ICE candidates
+    const offerIceCandidates = await socket.emitWithAck('newAnswer', offerObj);
+    offerIceCandidates.forEach(candidate => {
+        peerConnection.addIceCandidate(candidate);
+        console.log('========Added ICE candidate ===============')
+    })
+    console.log(offerIceCandidates);
 };
 
 const addAnswer = async (offerObj) => {
@@ -123,6 +129,11 @@ const createPeerConnection = (offerObj) => {
         }
         resolve();
     })
+}
+
+const addNewIceCandidate = (iceCandidate) => {
+    peerConnection.addIceCandidate(iceCandidate);
+    console.log('========Added ICE candidate ===============')
 }
 
 document.querySelector('#call').addEventListener('click', call);

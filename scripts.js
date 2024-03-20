@@ -52,10 +52,23 @@ const answerOffer = async (offerObj) => {
     await fetchUserMedia();
     await createPeerConnection(offerObj);
     const answer = await peerConnection.createAnswer({}); // just to make the docs happy
-    peerConnection.setLocalDescription(answer); // this is CLIENT2, and CLIENT2 uses the answer as the local description
+    await peerConnection.setLocalDescription(answer); // this is CLIENT2, and CLIENT2 uses the answer as the local description
     console.log(offerObj);
     console.log(answer);
+    // console.log(peerConnection.signalingState) // should be 'have-local-pranswer' because CLIENT2 has set its local description to its answer (but it won't be because of bug in Chrome)
+    // add the answer to the offerObj so the server knows which offer this is related to
+    offerObj.answer = answer;
+    // emit the answer to the signaling server so it can emit to CLIENT1
+    socket.emit('newAnswer', offerObj);
 };
+
+const addAnswer = async (offerObj) => {
+    // addAnswer is called in socketListeners.js when an answerResponse is emitted
+    // at this point, the offer and answer have been exchanged
+    // now CLIENT1 needs to set remote description
+    await peerConnection.setRemoteDescription(offerObj.answer);
+    // console.log(peerConnection.signalingState);
+}
 
 const fetchUserMedia = () => {
     return new Promise(async(resolve, reject) => {
@@ -83,7 +96,12 @@ const createPeerConnection = (offerObj) => {
 
         localStream.getTracks().forEach((track) => {
             peerConnection.addTrack(track, localStream);
-        })
+        });
+
+        peerConnection.addEventListener('signalingstatechange', (event) => {
+            console.log(event);
+            console.log(peerConnection.signalingState);
+        });
 
         peerConnection.addEventListener('icecandidate', (e) => {
             console.log('.......Ice candidate found.....');
@@ -99,7 +117,9 @@ const createPeerConnection = (offerObj) => {
         if (offerObj) {
             // this won't be set when called from call();
             // will be set when called from answerOffer();
-            peerConnection.setRemoteDescription(offerObj.offer);
+            // console.log(peerConnection.signalingState) // should be stable because no set description has been run yet
+            await peerConnection.setRemoteDescription(offerObj.offer);
+            // console.log(peerConnection.signalingState) // should have remote offer because CLIENT2 has set remote description on the offer
         }
         resolve();
     })

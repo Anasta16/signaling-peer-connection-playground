@@ -65,7 +65,31 @@ io.on('connection', (socket) => {
         console.log(newOffer.sdp.slice(50))
         // send out to all connected sockets except the caller
         socket.broadcast.emit('newOfferAwaiting', offers.slice(-1));
-    })
+    });
+
+    socket.on('newAnswer', offerObj => {
+        console.log(offerObj);
+        // emit this answer (offerObj) back to CLIENT1
+        // in order to do that, we need CLIENT1's socketId
+        const socketToAnswer = connectedSockets.find(socket => socket.userName === offerObj.offererUserName);
+        if (!socketToAnswer) {
+            console.log('no matching socket');
+            return;
+        }
+        // we found the matching socket so we can emit to it
+        const socketIdToAnswer = socketToAnswer.socketId;
+        // we find the offer to update so we can emit it
+        const offerToUpdate = offers.find(offer => offer.offererUserName === offerObj.offererUserName);
+        if (!offerToUpdate) {
+            console.log('no offer to update');
+            return;
+        }
+        offerToUpdate.answer = offerObj.answer;
+        offerToUpdate.answererUserName = userName;
+        // socket has a .to() which allows emitting to a room
+        // every socket has its own room
+        socket.to(socketIdToAnswer).emit('answerResponse', offerToUpdate);
+    });
 
     socket.on('sendIceCandidateToSignalingServer', iceCandidateObj => {
         const { didIOffer, iceUserName, iceCandidate } = iceCandidateObj;

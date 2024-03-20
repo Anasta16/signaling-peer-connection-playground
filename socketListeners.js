@@ -7,6 +7,11 @@ socket.on('availableOffers', offers => {
 // someone just made a new offer and we're already here - call createOfferEls
 socket.on('newOfferWaiting', offers => {
     createOfferEls(offers);
+});
+
+socket.on('answerResponse', offerObj => {
+    console.log(offerObj);
+    addAnswer(offerObj);
 })
 
 function createOfferEls(offers) {
@@ -18,5 +23,5 @@ function createOfferEls(offers) {
         newOfferEl.innerHTML = `<button class="btn btn-success col-1">Answer ${o.offererUserName}</button>`;
         newOfferEl.addEventListener('click', () => answerOffer(o));
         answerEl.appendChild(newOfferEl);
-    })
-}
+    });
+};

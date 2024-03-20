@@ -39,7 +39,7 @@ Signaling server has been waiting...
 ~ 20. CLIENT2 will listen for tracks/ICE from remote
     - and CLIENT2 is now done
     - waiting on ICE candidates and waiting on tracks
-21. Signaling server sends CLIENT1 answer (RTCSessionDescription - sdp/type) - type === "answer"
+21. Signaling server listens for answer, emits CLIENT1 answer (RTCSessionDescription - sdp/type) - type === "answer"
 22. CLIENT1 takes the answer and hands it to peerConnection.setRemoteDescription()
 ~ 23. CLIENT1 waits for ICE candidates and tracks
 

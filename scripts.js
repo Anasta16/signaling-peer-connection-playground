@@ -99,8 +99,11 @@ const createPeerConnection = (offerObj) => {
         // we can pass a config object and that config object can contain STUN servers
         // which will fetch us ICE candidates 
         peerConnection = await new RTCPeerConnection(peerConfiguration);
+        remoteStream = new MediaStream();
+        remoteVideoEl.srcObject = remoteStream;
 
         localStream.getTracks().forEach((track) => {
+            // add local tracks so that they can be sent once the connection is established
             peerConnection.addTrack(track, localStream);
         });
 
@@ -114,12 +117,22 @@ const createPeerConnection = (offerObj) => {
             console.log(e);
             if (e.candidate) {
                 socket.emit('sendIceCandidateToSignalingServer', {
-                    iceCandidate: e.iceCandidate,
+                    iceCandidate: e.candidate,
                     iceUserName: userName,
                     didIOffer,
                 });
             };
         });
+
+        peerConnection.addEventListener('track', (event) => {
+            console.log("Got a track from the other peer");
+            console.log(event);
+            event.streams[0].getTracks().forEach((track) => {
+                remoteStream.addTrack(track, remoteStream);
+                console.log("Here's an exciting moment")
+            })
+        })
+
         if (offerObj) {
             // this won't be set when called from call();
             // will be set when called from answerOffer();
